@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חדר בריחה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* הגדרת פונט כללי שתומך בעברית */
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&display=swap');
+        
+        :root {
+            --primary-blue: #3b82f6; /* Tailwind blue-500 */
+            --dark-bg: #111827; /* Darker background */
+            --card-bg: rgba(31, 41, 55, 0.8); /* Darker, more solid card background */
+            --glow-color: #ffffff;
+            --background-url: url('./0.png'); /* נתיב מקומי ראשוני */
+        }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--dark-bg);
+            position: relative;
+            z-index: 0;
+            overflow: hidden; 
+        }
+        
+        /* שכבת הרקע האמיתית - מכילה את התמונה */
+        body::before {
+            content: '';
+            position: fixed; 
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: var(--background-url); 
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
+            z-index: -2; 
+            transition: background-image 0.8s ease-in-out; 
+        }
+
+        /* שכבת דימום וטשטוש מעל התמונה */
+        body::after {
+            content: '';
+            position: fixed; 
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(17, 24, 39, 0.5); /* כהה יותר */
+            backdrop-filter: blur(12px); 
+            z-index: -1;
+            pointer-events: none; 
+        }
+
+        .container-card {
+            width: 95vw; 
+            max-width: 1000px; 
+            height: auto; 
+            min-height: 500px; 
+            background-color: var(--card-bg); 
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.6); 
+            color: #f9fafb;
+            z-index: 10; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative; 
+            border: 2px solid rgba(255, 255, 255, 0.1); 
+            transition: all 0.3s ease;
+        }
+
+        .container-card:hover {
+            box-shadow: 0 0 40px rgba(96, 165, 250, 0.3);
+        }
+        
+        /* --- הסתרת התוכן המרכזי --- */
+        #start-screen.hidden, 
+        #game-content.hidden,
+        #room-transition.hidden,
+        #final-code-screen.hidden, 
+        #win-screen.hidden {
+            display: none !important;
+        }
+
+        /* --- אנימציות מעבר עמודים משופרות: Fade-In/Out ו-Blur (ללא תזוזה אנכית) --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(0); filter: blur(8px); } 
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); filter: blur(0); }
+            to { opacity: 0; transform: translateY(0); filter: blur(8px); }
+        }
+
+        /* מחלקות שינוי דינמי */
+        .content-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .content-fade-out {
+            animation: fadeOut 0.5s ease-in forwards;
+        }
+
+        /* סגנון קבוע לקוד הסודי הממוסגר */
+        #current-known-code {
+            background-color: #1e293b; /* Slate-800 */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #60a5fa;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+            font-size: 1.25rem;
+        }
+        
+        /* ---------------------------------------------------------------------- */
+        
+        #game-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            width: 100%; 
+            flex-grow: 1; 
+        }
+        
+        .quiz-wrapper {
+            max-width: 500px; 
+            width: 100%;
+        }
+
+        /* --- עיצוב אפשרויות תשובה (MCQ) --- */
+        .option-label {
+            transition: all 0.3s ease; /* שיפור המעבר ל-0.3s */
+            cursor: pointer;
+            border: 2px solid #4b5563;
+            background-color: #374151; /* Darker option background */
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            font-size: 1.25rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* צל קבוע */
+        }
+        /* שינוי עיצוב בריחוף (hover) */
+        .option-label:hover {
+            border-color: #60a5fa; /* צהוב עדין בריחוף */
+            background-color: #4b5563; /* רקע מעט יותר כהה */
+            transform: translateY(-2px); /* הרמה קלה */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* צל מוגבר */
+        }
+        input[type="radio"]:checked + .option-label {
+            background-color: var(--primary-blue); 
+            border-color: var(--primary-blue);
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.8); /* צל מודגש בבחירה */
+            transform: none; /* ביטול הרמה בבחירה */
+        }
+        input[type="radio"] {
+            display: none;
+        }
+
+        /* קלט מספרים וטקסט */
+        input[type="number"],
+        input[type="text"] {
+            text-align: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: #1f2937; /* Very dark input */
+            border: 1px solid #4b5563;
+            color: #ffffff;
+            font-size: 1.5rem;
+            transition: all 0.2s;
+        }
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 5px var(--primary-blue);
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none; 
+            margin: 0;
+        }
+
+        /* --- עיצוב גרירה וסידור (SORT) --- */
+        .sortable-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-height: 150px; 
+        }
+        .sortable-item {
+            cursor: grab;
+            background-color: #374151; /* Match option background */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #4b5563;
+            transition: background-color 0.2s, transform 0.2s ease, border 0.1s; /* מעבר חלק יותר */
+            touch-action: none; 
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+        }
+        .sortable-item:active { cursor: grabbing; }
+
+        /* עיצוב פריט בעת גרירה (Dragging) */
+        .dragging { 
+            opacity: 0.9; /* שקיפות מעט גבוהה יותר */
+            transform: scale(1.05) rotate(-1.5deg) translate(-5px, -5px); /* הגדלה, הטיה קלה, ותנועה */
+            border: 3px solid var(--glow-color); /* גבול עבה ובהיר יותר */
+            box-shadow: 5px 5px 20px rgba(96, 165, 250, 0.9); /* צל חזק ומורחק */
+            background-color: #4b5563;
+            cursor: grabbing !important;
+        }
+        .sortable-item.drag-over-top { border-top: 4px solid #34d399 !important; border-bottom: 1px solid #4b5563; } /* Green highlight */
+        .sortable-item.drag-over-bottom { border-bottom: 4px solid #34d399 !important; border-top: 1px solid #4b5563; } /* Green highlight */
+
+        /* אנימציות והודעות */
+        #room-transition { 
+            position: absolute; 
+            top: 0; 
+            right: 0; 
+            bottom: 0; 
+            left: 0; 
+            background-color: rgba(17, 24, 39, 0.98); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 20; 
+            padding: 2rem; 
+        }
+        .code-hint { 
+            font-size: 6rem; 
+            font-weight: 900; 
+            color: #fcd34d; 
+            margin: 2rem 0; 
+            text-shadow: 0 0 15px #fcd34d, 0 0 30px rgba(252, 211, 77, 0.5); 
+            transition: transform 0.5s ease;
+        }
+        
+        .correct-message { color: #34d399; /* Emerald Green */ }
+        .error-message { color: #f87171; /* Red-400 */ }
+
+        /* --- עיצוב כפתורים גנרי משופר --- */
+        .action-button {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 700; /* font-bold */
+            padding: 1rem 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+        
+        #submit-button {
+            background-color: #10b981; /* Emerald-500 */
+            box-shadow: 0 4px #047857; /* Darker shadow */
+        }
+        #submit-button:hover {
+            background-color: #059669; /* Emerald-600 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px #047857;
+        }
+        #submit-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #047857;
+        }
+
+        /* כפתור מעבר */
+        .transition-button {
+            background-color: var(--primary-blue);
+            box-shadow: 0 4px #1e40af;
+        }
+        .transition-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px #1e40af;
+        }
+        .transition-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #1e40af;
+        }
+
+        /* כפתור נעילה סופי */
+        .final-lock-button {
+            background-color: #dc2626; /* Red-600 */
+            box-shadow: 0 4px #991b1b;
+        }
+        .final-lock-button:hover {
+            background-color: #b91c1c; /* Red-700 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px #991b1b;
+        }
+        .final-lock-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #991b1b;
+        }
+
+
+        /* --- FOOTER STYLE --- */
+        #level-footer {
+            background-color: rgba(31, 41, 55, 0.95);
+            color: #9ca3af; 
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1.5rem; 
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #4b5563;
+        }
+
+        /* עיצוב כלי דילוג (Dev Skip) */
+        #dev-skip-menu {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+<div id="escape-room" class="container-card">
+    
+    <div id="start-screen" class="hidden absolute inset-0 bg-gray-900/95 flex flex-col justify-center items-center p-8 content-fade-in" style="z-index: 30;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-fingerprint mb-6 text-yellow-300 animate-bounce"><path d="M12 10a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M2.5 7.5C4 10 6.5 12 12 12s8-2 9.5-4.5"/><path d="M4 14c2.2 2.8 5.4 4 8 4s5.8-1.2 8-4"/><path d="M5 2c2 4 3 7 3 10c0 4 0 6 3 6s3-2 3-6c0-3 1-6 3-10"/></svg>
+        <h2 class="text-5xl font-extrabold text-white mb-4 tracking-wider">חדר בריחה בנושא ביומימיקרי גלובלי</h2>
+        <p class="text-xl text-gray-300 mb-10 text-center max-w-xl">בחדר הבריחה הזה תעברו ב-4 יבשות שונות</p>
+        <p class="text-xl text-gray-300 mb-10 text-center max-w-xl">בכל יבשת עונים על 3 שאלות קשורות כדי להשיג את הקוד הסופי</p>
+
+        <p class="text-xl text-gray-500 mb-10 text-center min-w-xl">חדר בריחה זה נוצר על ידי איתן אסולין.</p>
+        <button onclick="startGameFromStartScreen()" class="action-button transition-button" style="width: auto; padding: 1.2rem 3rem;">התחל את חדר הבריחה</button>
+    </div>
+    <div class="header text-center mb-6">
+        <div class="flex items-center justify-center text-4xl mb-8 text-yellow-300"> 
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-leaf ml-3 animate-pulse text-green-400"><path d="M11 20A7 7 0 0 0 9.8 8.6L5 2l.33 3.33a4 4 0 0 1 1.45 1.57l9.88 9.88A7 7 0 0 0 11 20z"/><path d="M11 20c-1.6-1.6-1.6-4.32-.2-5.72l9.28-9.28a2 2 0 1 1 2.83 2.83L13.8 19.8A4 4 0 0 1 11 20z"/></svg>
+            <h1 class="font-extrabold tracking-wide">חדר בריחה: ביומימיקרי גלובלי</h1>
+            <p class="text-sm text-gray-500 mr-2">(פרויקט ההשראה מהטבע)</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock mr-3 text-red-400"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <p class="text-center text-gray-400 mb-10 text-lg">גלו את 4 ייבשות שונות בזמן שאתם עונים על שאלות קשורות לכל יבשת</p>
+    </div>
+    
+    <div id="room-transition" class="hidden">
+        <h2 class="text-4xl font-extrabold text-white mb-4"></h2>
+        <p class="text-xl text-gray-300 mb-6">המספר/אות שפותח את החדר הוא:</p>
+        <p id="room-code-hint" class="code-hint"></p>
+        <p id="current-known-code" class="text-lg font-bold text-gray-400 mt-4 mb-4"></p>
+        <button onclick="moveToNextRoom()" class="mt-4 action-button transition-button" style="width: auto; padding: 1rem 2rem;">מעבר לחדר הבא</button>
+    </div>
+
+    <div id="game-content" class="flex flex-col items-center hidden">
+        
+        <div class="quiz-wrapper">
+            <div id="question-area" class="w-full bg-gray-900/95 p-6 rounded-xl shadow-inner mb-6 border border-gray-700">
+                <p id="puzzle-text" class="text-2xl font-bold leading-relaxed mt-4 text-center text-white">...</p>
+            </div>
+
+            <div class="flex flex-col items-stretch space-y-3">
+                <div id="options-container" class="flex flex-col gap-3">
+                </div>
+                
+                <p id="message-display" class="text-center font-semibold h-6"></p>
+
+                <button id="submit-button" onclick="checkAnswer()" class="action-button">
+                    בדיקה 
+                </button>
+            </div>
+        </div>
+        
+        <div id="level-footer" class="hidden">שלב 1 מתוך 12 (חדר 1/4)</div>
+        </div>
+
+    <div id="final-code-screen" class="hidden absolute inset-0 bg-[#0f172a] bg-opacity-95 flex flex-col justify-center items-center p-8">
+        <p class="text-3xl font-extrabold text-[#fcd34d] mb-4 tracking-widest">הכנסו את הקוד הסופי</p>
+        <p class="text-xl text-gray-300 mb-8 text-center"> הקוד הסופי כולל 4 טווים</p>
+        <input type="text" id="final-code-input" maxlength="4" class="w-full max-w-xs text-center p-4 text-3xl font-mono tracking-widest uppercase mb-6" placeholder="A K 4 7">
+        <button onclick="checkFinalCode()" class="w-full max-w-xs action-button final-lock-button" style="box-shadow: 0 4px #991b1b;">בדוק</button>
+        <p id="final-message-display" class="text-center font-semibold h-6 mt-4"></p>
+    </div>
+
+
+    <div id="win-screen" class="hidden absolute inset-0 bg-[#0f172a] bg-opacity-95 flex flex-col justify-center items-center p-8">
+        <div class="door-unlocked text-center">
+            <p class="text-6xl font-extrabold text-green-400"> משימה הושלמה בהצלחה✅</p>
+            <p class="text-3xl font-bold text-yellow-400 mt-6 mb-4">AK47</p>
+
+        </div>
+        <button onclick="resetGame()" class="mt-8 action-button transition-button" style="box-shadow: 0 4px #1e40af;">התחל מחדש</button>
+    </div>
+</div>
+
+<div id="dev-skip-menu" class="fixed bottom-4 left-4 z-50">
+    <button onclick="toggleSkipMenu()" id="skip-button" class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg font-bold transition duration-200 text-sm">
+        &#9881; DEV TOOLS
+    </button>
+    
+    <div id="skip-controls" class="hidden bg-gray-800 p-4 rounded-xl shadow-2xl mt-2 w-64 border border-red-500 text-right">
+        </div>
+</div>
+<script>
+    // --- הגדרות גלובליות ---
+    const ROOM_CODES = ["A", "K", "4", "7"]; 
+    const ROOM_NAMES = ["אפריקה", "אירופה", "אסיה", "אוסטרליה"];
+    const ROOM_QUESTIONS_COUNT = 3; 
+    const ROOM_BG_IMAGES = [
+        './0.png', // תמונת פתיחה
+        './1.png', 
+        './2.png', 
+        './3.png',  
+        './4.png'  
+    ];
+    // ------------------------------------
+    
+    const puzzles = [
+        // --- חדר 1: אפריקה (קוד: A) ---
+        { type: "mcq", subject: "אפריקה: קן הטרמיטים", 
+          question: "איזה מבנה אפריקאי (מבנה חרקים) שימש השראה לבניית בניין ה-Eastgate Centre בזימבבואה לאוורור טבעי?", 
+          answer: "קן טרמיטים", 
+          options: ["קן נשרים", "קן טרמיטים", "מחילת חולד ענק", "מבנה אלמוגים"] 
+        },
+        { type: "number", subject: "אפריקה: ג'ירף", 
+          question: "מהו המספר הקרוב ביותר לגובה הממוצע (במטרים) של ג'ירף בוגר, שהצוואר שלו משמש מודל לזרועות רובוטיות?", 
+          answer: "5",
+        },
+        { type: "sort", subject: "אפריקה: למידה מהמדבר", 
+          question: "סדרו את פתרונות הביומימיקרי הבאים הקשורים לחיות מדבר (מהבסיסי למתקדם).",
+          answer: ["חיקוי צבעי הסוואה (זיקית)", "איסוף מים מהאוויר (חיפושית נמיב)", "ייצור חום פנימי (צבוע)"], 
+          options: ["איסוף מים מהאוויר (חיפושית נמיב)", "חיקוי צבעי הסוואה (זיקית)", "ייצור חום פנימי (צבוע)"] 
+        },
+
+        // --- חדר 2: אירופה (קוד: K) ---
+        { type: "mcq", subject: "אירופה: הרכבת המהירה", 
+          question: "איזה בעל חיים אירופאי (ציפור) שימש השראה לעיצוב חרטום רכבת השינקנסן כדי לצמצם רעש?", 
+          answer: "שלדג", 
+          options: ["נקר", "בז נודד", "שלדג", "ינשוף"] 
+        },
+        { type: "number", subject: "אירופה: חרקי מים", 
+          question: "כמה אחוזים מכוח המשיכה של כדור הארץ יכולים חרקי מים אירופאיים (כגון שפיראים) להחזיק באמצעות כפות הרגליים שלהם?", 
+          answer: "1000", 
+        }, 
+        { type: "mcq", subject: "אירופה: מיתקן הדבקה", 
+          question: "איזה צמח אירופאי שימש השראה ליצירת סקוטש על ידי הממציא השוויצרי ג'ורג' דה מסטרל?", 
+          answer: "זרעי כלב שדה", 
+          options: ["עלי ליבנה", "זרעי כלב שדה", "עלי ערבה", "אצטרובל אורן"] 
+        },
+            
+        // --- חדר 3: אסיה (קוד: 4) ---
+        { type: "mcq", subject: "אסיה: אפקט הלוטוס", 
+          question: "איזה צמח מים אסיאתי ידוע ביכולתו לדחות מים ובוץ (אפקט הלוטוס) ושימש השראה לציפויים מנקים את עצמם?", 
+          answer: "לוטוס", 
+          options: ["במבוק", "לילי מים", "אורז", "לוטוס"] 
+        },
+        { type: "number", subject: "אסיה: פרפר הטורנינג", 
+          question: "כמה כנפיים יש לפרפר הטורנינג האסיאתי, אשר צבעיו העזים מבוססים על מבנה ננו-מטרי ולא על פיגמנטים?", 
+          answer: "4", 
+        }, 
+        { type: "sort", subject: "אסיה: יציבות סיסמית", 
+          question: "סדרו את המבנים האסיאתיים הבאים (שהיוו השראה) מהמבנה הפחות עמיד לרעידות אדמה לעמיד ביותר.",
+          answer: ["מבנה עץ פשוט", "מגדל עץ יפני (פאגודה)", "קן צרעה"], 
+          options: ["מגדל עץ יפני (פאגודה)", "קן צרעה", "מבנה עץ פשוט"] 
+        },
+
+        // --- חדר 4: אוסטרליה (קוד: 7) ---
+        { type: "number", subject: "אוסטרליה: קנגורו", 
+          question: "כמה רגליים אחוריות משמשות את הקנגורו האוסטרלי לקפיצה, שהשפיעה על עיצוב כלי רכב יעילים באנרגיה?", 
+          answer: "2", 
+        }, 
+        { type: "mcq", subject: "אוסטרליה: כריש", 
+          question: "מבנה עור הכריש האוסטרלי (דנטicles) שימש השראה לפיתוח חומר שנועד למנוע הצטברות של מה?", 
+          answer: "חיידקים ואצות", 
+          options: ["לכלוך ושומן", "חיידקים ואצות", "חלודה", "שריטות"] 
+        },
+        { type: "sort", subject: "אוסטרליה: קליטת מים", 
+          question: "סדרו את שיטות קליטת המים של חיות אוסטרליות (מהיעילה ביותר לפחות יעילה לאדם בטכנולוגיה).",
+          answer: ["שמירת טל על השריון (לטאת קוצנית)", "הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)"], 
+          options: ["הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)", "שמירת טל על השריון (לטאת קוצנית)"] 
+        }
+    ];
+
+    let currentLevel = 0;
+    const totalLevels = puzzles.length;
+    let finalCodeRevealed = []; 
+    let draggedItem = null; 
+
+    // הפניה לאלמנטים ב-DOM
+    const startScreen = document.getElementById('start-screen'); 
+    const levelFooter = document.getElementById('level-footer'); 
+    const puzzleText = document.getElementById('puzzle-text');
+    const optionsContainer = document.getElementById('options-container');
+    const messageDisplay = document.getElementById('message-display');
+    const winScreen = document.getElementById('win-screen');
+    const gameContent = document.getElementById('game-content');
+    const roomTransitionScreen = document.getElementById('room-transition');
+    const roomCodeHint = document.getElementById('room-code-hint');
+    const currentKnownCode = document.getElementById('current-known-code'); 
+    const finalCodeScreen = document.getElementById('final-code-screen');
+    const finalCodeInput = document.getElementById('final-code-input');
+    const finalMessageDisplay = document.getElementById('final-message-display');
+    const skipControls = document.getElementById('skip-controls'); // Dev skip
+
+    // --- Drag and Drop Handlers (ללא שינוי) ---
+    function handleDragStart(e) {
+        draggedItem = this;
+        setTimeout(() => this.classList.add('dragging'), 0);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this.dataset.value); 
+    }
+    function handleDragEnd() {
+        this.classList.remove('dragging');
+        draggedItem = null;
+        document.querySelectorAll('.sortable-item').forEach(item => { item.classList.remove('drag-over-top', 'drag-over-bottom'); });
+    }
+    function handleDragOver(e) {
+        e.preventDefault(); 
+        e.dataTransfer.dropEffect = 'move';
+        const target = this;
+        if (draggedItem !== target && target.classList.contains('sortable-item')) {
+            document.querySelectorAll('.sortable-item').forEach(item => { item.classList.remove('drag-over-top', 'drag-over-bottom'); });
+            const rect = target.getBoundingClientRect();
+            const y = e.clientY;
+            const isAbove = y < rect.top + rect.height / 2;
+            if (isAbove) { target.classList.add('drag-over-top'); } else { target.classList.add('drag-over-bottom'); }
+        }
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        const target = this;
+        document.querySelectorAll('.sortable-item').forEach(item => { item.classList.remove('drag-over-top', 'drag-over-bottom'); });
+        if (draggedItem !== target && target.classList.contains('sortable-item')) {
+            const container = target.parentNode;
+            const rect = target.getBoundingClientRect();
+            const y = e.clientY;
+            const isAbove = y < rect.top + rect.height / 2;
+            if (isAbove) { container.insertBefore(draggedItem, target); } else { container.insertBefore(draggedItem, target.nextSibling); }
+        }
+    }
+    function addDragDropListeners() {
+        const items = document.querySelectorAll('.sortable-item');
+        items.forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragend', handleDragEnd);
+            item.addEventListener('dragover', handleDragOver);
+            item.addEventListener('drop', handleDrop);
+            // Touch handlers for mobile
+            item.addEventListener('touchstart', handleTouchStart, { passive: false });
+            item.addEventListener('touchmove', handleTouchMove, { passive: false });
+            item.addEventListener('touchend', handleTouchEnd);
+        });
+    }
+
+    // --- Touch Handlers for Drag & Drop (ללא שינוי) ---
+    let touchStartY = 0;
+    let currentTouchTarget = null;
+    let touchDragItem = null;
+
+    function handleTouchStart(e) {
+        e.preventDefault(); 
+        touchDragItem = this;
+        touchStartY = e.touches[0].clientY;
+        touchDragItem.classList.add('dragging');
+        currentTouchTarget = touchDragItem;
+
+        const clone = touchDragItem.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.zIndex = 1000;
+        clone.style.width = touchDragItem.offsetWidth + 'px';
+        clone.style.transition = 'none';
+        clone.id = 'touch-clone';
+        document.body.appendChild(clone);
+        touchDragItem.style.opacity = '0.4';
+
+        const rect = touchDragItem.getBoundingClientRect();
+        clone.style.top = rect.top + 'px';
+        clone.style.right = (window.innerWidth - rect.right) + 'px';
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
+        if (!touchDragItem) return;
+
+        const clone = document.getElementById('touch-clone');
+        const clientY = e.touches[0].clientY;
+        
+        const deltaY = clientY - touchStartY;
+        const currentTop = parseFloat(clone.style.top);
+        clone.style.top = (currentTop + deltaY) + 'px';
+        touchStartY = clientY;
+
+        const items = document.querySelectorAll('.sortable-item');
+        let closestItem = null;
+        let closestDistance = Infinity;
+
+        items.forEach(item => {
+            if (item !== touchDragItem) {
+                const rect = item.getBoundingClientRect();
+                const dist = Math.abs(clientY - (rect.top + rect.height / 2));
+
+                if (dist < closestDistance) {
+                    closestDistance = dist;
+                    closestItem = item;
+                }
+            }
+        });
+
+        document.querySelectorAll('.sortable-item').forEach(item => { item.classList.remove('drag-over-top', 'drag-over-bottom'); });
+
+        if (closestItem && closestDistance < 50) { 
+            const rect = closestItem.getBoundingClientRect();
+            const isAbove = clientY < rect.top + rect.height / 2;
+            if (isAbove) { closestItem.classList.add('drag-over-top'); } else { closestItem.classList.add('drag-over-bottom'); }
+            currentTouchTarget = closestItem;
+        } else {
+            currentTouchTarget = touchDragItem; 
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (!touchDragItem) return;
+
+        const clone = document.getElementById('touch-clone');
+        if (clone) {
+            clone.remove();
+        }
+
+        touchDragItem.classList.remove('dragging');
+        touchDragItem.style.opacity = '1';
+
+        document.querySelectorAll('.sortable-item').forEach(item => { item.classList.remove('drag-over-top', 'drag-over-bottom'); });
+
+        if (currentTouchTarget && currentTouchTarget !== touchDragItem) {
+            const container = currentTouchTarget.parentNode;
+            const rect = currentTouchTarget.getBoundingClientRect();
+            const clientY = e.changedTouches[0].clientY;
+            const isAbove = clientY < rect.top + rect.height / 2;
+            
+            if (isAbove) { container.insertBefore(touchDragItem, currentTouchTarget); } else { container.insertBefore(touchDragItem, currentTouchTarget.nextSibling); }
+        }
+
+        touchDragItem = null;
+        currentTouchTarget = null;
+    }
+    // --- End Drag and Drop Handlers ---
+
+
+    function normalizeText(text) {
+        const withoutParentheses = text.replace(/\([^)]*\)/g, '');
+        return withoutParentheses.toLowerCase().trim().replace(/\s/g, ''); 
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]]; 
+        }
+    }
+
+    function updatePuzzleContent(puzzle, levelIndex) {
+        const levelNumber = levelIndex + 1;
+        const currentRoomIndex = Math.floor(levelIndex / ROOM_QUESTIONS_COUNT);
+        const currentRoomName = ROOM_NAMES[currentRoomIndex];
+        const totalRooms = ROOM_CODES.length;
+
+        levelFooter.textContent = `שלב ${levelNumber} מתוך ${totalLevels} (חדר ${currentRoomIndex + 1}/${totalRooms}: ${currentRoomName})`;
+
+        puzzleText.innerHTML = puzzle.question;
+        optionsContainer.innerHTML = ''; 
+        messageDisplay.textContent = ''; 
+        finalMessageDisplay.textContent = ''; 
+
+        optionsContainer.className = 'flex flex-col gap-3';
+
+        if (puzzle.type === 'mcq') {
+            const shuffledOptions = [...puzzle.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach((optionText, index) => {
+                const uniqueId = `option-${levelIndex}-${index}`;
+                const normalizedValue = normalizeText(optionText); 
+                let displayValue = optionText.trim();
+                
+                if (displayValue.includes('(')) {
+                    displayValue = displayValue.substring(0, displayValue.indexOf('(')).trim();
+                }
+
+                const optionWrapper = document.createElement('div');
+                optionWrapper.innerHTML = `
+                    <input type="radio" id="${uniqueId}" name="puzzle-answer" value="${normalizedValue}">
+                    <label for="${uniqueId}" class="option-label">
+                        <span>${displayValue}</span>
+                    </label>
+                `;
+                optionsContainer.appendChild(optionWrapper);
+            });
+
+        } else if (puzzle.type === 'number') {
+            optionsContainer.innerHTML = `
+                <input type="number" id="number-input" 
+                        class="w-full p-3 text-center text-xl rounded-lg" 
+                        placeholder="הכנס מספר שלם" 
+                        min="0"
+                        inputmode="numeric">
+            `;
+            document.getElementById('number-input').focus(); 
+
+        } else if (puzzle.type === 'sort') {
+            optionsContainer.className = 'sortable-list w-full';
+            optionsContainer.innerHTML = '';
+            
+            const shuffledOptions = [...puzzle.options];
+            shuffleArray(shuffledOptions); 
+
+            shuffledOptions.forEach((itemText) => {
+                const item = document.createElement('div');
+                item.className = 'sortable-item shadow-md';
+                item.setAttribute('draggable', 'true');
+                item.setAttribute('data-value', itemText); 
+                item.textContent = itemText;
+                optionsContainer.appendChild(item);
+            });
+            
+            addDragDropListeners();
+        }
+    }
+
+    // פונקציה לטעינת השאלה הנוכחית (עם אנימציה)
+    function loadPuzzle() {
+        if (currentLevel >= totalLevels) {
+            showFinalCodeScreen();
+            return;
+        }
+
+        // 1. הפעלת אנימציית Fade-Out
+        gameContent.classList.add('content-fade-out');
+        
+        setTimeout(() => {
+            // 2. הסתרת התוכן הישן
+            gameContent.classList.add('hidden');
+            gameContent.classList.remove('content-fade-out');
+
+            const puzzle = puzzles[currentLevel];
+            updatePuzzleContent(puzzle, currentLevel);
+            
+            // 3. הצגת והפעלת אנימציית Fade-In
+            gameContent.classList.remove('hidden'); 
+            gameContent.classList.add('content-fade-in'); 
+            levelFooter.classList.remove('hidden'); 
+
+            roomTransitionScreen.classList.add('hidden'); 
+            roomTransitionScreen.classList.remove('content-fade-in');
+            
+            const currentRoomIndex = Math.floor(currentLevel / ROOM_QUESTIONS_COUNT);
+            // שימוש באינדקס של החדר + 1 בגלל שאינדקס 0 שמור למסך הפתיחה
+            updateRoomVisuals(currentRoomIndex + 1); 
+        }, 500); // הזמן שלוקח לאנימציית היציאה
+    }
+
+    // פונקציה לבדיקת התשובה
+    function checkAnswer() {
+        const puzzle = puzzles[currentLevel];
+        let isCorrect = false;
+        let isAnswered = false;
+
+        if (puzzle.type === 'mcq') {
+            const selectedRadio = document.querySelector('input[name="puzzle-answer"]:checked');
+            if (selectedRadio) {
+                const userInputValue = selectedRadio.value;
+                const cleanAnswer = normalizeText(puzzle.answer);
+                isCorrect = (userInputValue === cleanAnswer);
+                isAnswered = true;
+            }
+
+        } else if (puzzle.type === 'number') {
+            const numberInput = document.getElementById('number-input');
+            if (numberInput) {
+                const value = numberInput.value.trim();
+                const numValue = parseFloat(value);
+                
+                if (value !== '' && !isNaN(numValue) && Number.isInteger(numValue) && numValue >= 0) {
+                    const userInputValue = String(numValue);
+                    const cleanAnswer = puzzle.answer; 
+                    isCorrect = (userInputValue === cleanAnswer);
+                    isAnswered = true;
+                }
+            }
+        } else if (puzzle.type === 'sort') {
+            const currentOrderElements = Array.from(document.querySelectorAll('.sortable-item'));
+            if (currentOrderElements.length > 0) {
+                const currentOrder = currentOrderElements.map(item => item.dataset.value);
+                const correctOrder = puzzle.answer; 
+                
+                isCorrect = currentOrder.length === correctOrder.length && 
+                            currentOrder.every((value, index) => value === correctOrder[index]);
+                isAnswered = true;
+            }
+        }
+        
+
+        if (!isAnswered) {
+            showMessage('⚠️ אנא תענה על השאלה.', 'error-message');
+            return;
+        }
+
+        if (isCorrect) {
+            showMessage('✅ תשובה נכונה!', 'correct-message');
+            
+            const currentRoomIndex = Math.floor(currentLevel / ROOM_QUESTIONS_COUNT);
+            currentLevel++;
+
+            const endOfRoom = currentLevel > 0 && currentLevel % ROOM_QUESTIONS_COUNT === 0;
+            const finalLevelReached = currentLevel >= totalLevels;
+
+            if (endOfRoom || finalLevelReached) {
+                setTimeout(() => showRoomTransition(currentRoomIndex), 1500); 
+            } else {
+                setTimeout(loadPuzzle, 1500); 
+            }
+            
+        } else {
+            showMessage('טעות נסה שנית!', 'error-message');
+        }
+    }
+
+    function showMessage(text, className) {
+        messageDisplay.textContent = text;
+        messageDisplay.className = `text-center font-semibold h-6 ${className}`;
+        
+        setTimeout(() => {
+            messageDisplay.textContent = '';
+            messageDisplay.className = 'text-center font-semibold h-6';
+        }, 1500);
+    }
+    
+    // הפונקציה המעודכנת לניהול תמונות הרקע
+    function updateRoomVisuals(imageIndex) {
+        const imageUrl = ROOM_BG_IMAGES[imageIndex];
+        document.body.style.setProperty('--background-url', `url('${imageUrl}')`); 
+    }
+
+    // הצגת מסך המעבר בין חדרים (עם אנימציה וטקסט אחיד)
+    function showRoomTransition(roomIndex) {
+        const codeHint = ROOM_CODES[roomIndex];
+        
+        if (!finalCodeRevealed.includes(codeHint)) {
+            finalCodeRevealed.push(codeHint);
+        }
+        
+        roomCodeHint.textContent = codeHint;
+        currentKnownCode.textContent = `הקודים שנאספו: ${finalCodeRevealed.join(' • ')}`; 
+        
+        // 1. הפעלת אנימציית Fade-Out על התוכן הקיים
+        gameContent.classList.add('content-fade-out'); 
+        levelFooter.classList.add('content-fade-out'); 
+        
+        setTimeout(() => {
+            // 2. הסתרת התוכן הישן
+            gameContent.classList.add('hidden'); 
+            levelFooter.classList.add('hidden'); 
+            
+            // 3. איפוס מחלקות ה-Fade-Out
+            gameContent.classList.remove('content-fade-out');
+            levelFooter.classList.remove('content-fade-out');
+        
+            // 4. הצגת מסך המעבר והפעלת Fade-In
+            roomTransitionScreen.classList.remove('hidden');
+            roomTransitionScreen.classList.add('content-fade-in');
+
+            // --- שימוש בטקסט אחיד לכותרת ---
+            const finalCheck = finalCodeRevealed.length === ROOM_CODES.length;
+            document.querySelector('#room-transition h2').textContent = finalCheck 
+                ? "✅ הסיסמה הסופית נכונה"
+                : " אות/מספר חדש נמצא!";
+                
+            document.querySelector('#room-transition button').textContent = finalCheck 
+                ? "מעבר להכנסת הסיסמה הסופית"
+                : "מעבר לחדר הבא";
+
+            // שימוש באינדקס של החדר + 1 בגלל שאינדקס 0 שמור למסך הפתיחה
+            updateRoomVisuals(roomIndex + 1); 
+        }, 500); // הזמן שלוקח לאנימציית היציאה
+    }
+
+    // מעבר לחדר הבא (או למסך הקוד הסופי) (עם אנימציה)
+    function moveToNextRoom() {
+        roomTransitionScreen.classList.add('content-fade-out');
+
+        setTimeout(() => {
+            roomTransitionScreen.classList.remove('content-fade-in', 'content-fade-out');
+            roomTransitionScreen.classList.add('hidden');
+
+            if (finalCodeRevealed.length < ROOM_CODES.length) {
+                loadPuzzle(); 
+            } else {
+                showFinalCodeScreen();
+            }
+        }, 500);
+    }
+    
+    // הצגת מסך הקוד הסופי
+    function showFinalCodeScreen() {
+        // אנימציה למסך הנעילה
+        finalCodeScreen.classList.add('content-fade-in');
+        
+        roomTransitionScreen.classList.add('hidden');
+        gameContent.classList.add('hidden');
+        levelFooter.classList.add('hidden');
+        winScreen.classList.add('hidden');
+        
+        finalCodeScreen.classList.remove('hidden');
+        finalCodeInput.value = ''; 
+        finalMessageDisplay.textContent = ''; 
+        finalCodeInput.focus();
+        
+        const placeholderChars = ROOM_CODES.map((code, index) => finalCodeRevealed[index] ? finalCodeRevealed[index] : '_');
+        finalCodeInput.placeholder = placeholderChars.join(' ')
+    }
+    
+    // בדיקת הקוד הסופי
+    function checkFinalCode() {
+        const userInput = finalCodeInput.value.trim().toUpperCase().replace(/\s/g, ''); 
+        const correctCode = ROOM_CODES.join(''); // "AK47"
+
+        if (userInput === correctCode) {
+            finalMessageDisplay.textContent = ' סיסמה סופית נכונה✅';
+            finalMessageDisplay.classList.add('correct-message');
+            finalMessageDisplay.classList.remove('error-message');
+            setTimeout(showWinScreen, 1500);
+        } else {
+            finalMessageDisplay.textContent = '❌ סיסמה שגוי נסה שנית';
+            finalMessageDisplay.classList.add('error-message');
+            finalMessageDisplay.classList.remove('correct-message');
+            finalCodeInput.value = ''; 
+            finalCodeInput.focus();
+        }
+    }
+    
+    // הצגת מסך הניצחון 
+    function showWinScreen() {
+        finalCodeScreen.classList.add('hidden');
+        winScreen.classList.remove('hidden');
+        winScreen.classList.add('content-fade-in');
+
+        document.querySelector('#win-screen p.text-3xl').textContent = `הקוד הסופי הוא: ${ROOM_CODES.join('')}`;
+    }
+    
+    // איפוס המשחק 
+    function resetGame() {
+        currentLevel = 0;
+        finalCodeRevealed = [];
+        
+        winScreen.classList.add('hidden');
+        winScreen.classList.remove('content-fade-in');
+        finalCodeScreen.classList.add('hidden');
+        finalCodeScreen.classList.remove('content-fade-in');
+        roomTransitionScreen.classList.add('hidden');
+        
+        showStartScreen(); // חזרה למסך הפתיחה
+    }
+    
+    
+    // --- ניהול מסך פתיחה ---
+    
+    function showStartScreen() {
+        // הצגת מסך הפתיחה
+        updateRoomVisuals(0); // טעינת התמונה 0.png
+        
+        // לוודא שכל שאר המסכים מוסתרים בהתחלה
+        gameContent.classList.add('hidden');
+        roomTransitionScreen.classList.add('hidden');
+        finalCodeScreen.classList.add('hidden');
+        winScreen.classList.add('hidden');
+        levelFooter.classList.add('hidden');
+        
+        startScreen.classList.remove('hidden');
+        startScreen.classList.add('content-fade-in');
+    }
+
+    function startGameFromStartScreen() {
+        startScreen.classList.add('content-fade-out');
+        
+        setTimeout(() => {
+            startScreen.classList.add('hidden');
+            startScreen.classList.remove('content-fade-in', 'content-fade-out');
+            loadPuzzle(); // מתחיל את המשחק בפאזל הראשון
+        }, 500);
+    }
+    // -------------------------
+    
+    // --- Dev Skip Functionality (פונקציות דילוג) ---
+    function toggleSkipMenu() {
+        skipControls.classList.toggle('hidden');
+        if (!skipControls.classList.contains('hidden')) {
+            setupDevSkipMenu();
+        }
+    }
+    
+    function skipToLevel(levelIndex) {
+        currentLevel = levelIndex;
+        
+        const currentRoomIndex = Math.floor(levelIndex / ROOM_QUESTIONS_COUNT);
+        finalCodeRevealed = ROOM_CODES.slice(0, currentRoomIndex);
+        
+        if (levelIndex >= totalLevels) {
+             finalCodeRevealed = [...ROOM_CODES];
+             showFinalCodeScreen();
+        } else {
+            loadPuzzle();
+        }
+
+        skipControls.classList.add('hidden');
+    }
+
+    function setupDevSkipMenu() {
+        skipControls.innerHTML = '<p class="text-white font-bold mb-2">דילוג לשלב:</p>';
+        
+        puzzles.forEach((puzzle, index) => {
+            const roomIndex = Math.floor(index / ROOM_QUESTIONS_COUNT);
+            const levelInRoom = (index % ROOM_QUESTIONS_COUNT) + 1;
+            
+            const button = document.createElement('button'); 
+            button.className = 'w-full text-right p-2 rounded-lg bg-gray-700 hover:bg-gray-600 mb-1 text-sm transition-colors';
+            button.textContent = `חדר ${roomIndex + 1}: ${ROOM_NAMES[roomIndex]} - שלב ${levelInRoom}`;
+            button.onclick = () => skipToLevel(index);
+            skipControls.appendChild(button);
+        });
+
+        const finalButton = document.createElement('button');
+        finalButton.className = 'w-full text-right p-2 rounded-lg bg-red-700 hover:bg-red-600 mt-3 text-sm font-bold transition-colors';
+        finalButton.textContent = `⬅️ מסך נעילה סופי`;
+        finalButton.onclick = () => {
+             finalCodeRevealed = [...ROOM_CODES]; 
+             skipToLevel(totalLevels); 
+        }
+        skipControls.appendChild(finalButton);
+    }
+    
+    // הפעלת המשחק עם טעינת העמוד
+    window.onload = showStartScreen;
+</script>
+</body>
+</html>
