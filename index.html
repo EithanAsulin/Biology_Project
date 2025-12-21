@@ -11,7 +11,7 @@
         :root {
             --bg-deep: #020202;
             /* Layered Opacity System */
-            --panel-bg: rgba(10, 10, 10, 0.5); 
+            --panel-bg: rgba(10, 10, 10, 0.6); 
             --item-bg: rgba(255, 255, 255, 0.03);
             --border: rgba(255, 255, 255, 0.08);
         }
@@ -42,7 +42,7 @@
         #bg-gradient-overlay {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at center, rgba(0,0,0,0) 10%, rgba(0,0,0,0.85) 100%);
+            background: radial-gradient(circle at center, rgba(0,0,0,0) 10%, rgba(0,0,0,0.9) 100%);
             z-index: -2;
         }
 
@@ -217,7 +217,7 @@
     const puzzles = [
         { type: "mcq", subject: "AFRICA SECTOR", question: "איזה מבנה אפריקאי שימש השראה לאוורור טבעי בבניין ה-Eastgate Centre?", answer: "קן טרמיטים", options: ["קן נשרים", "קן טרמיטים", "מחילת חולד", "מבנה אלמוגים"] },
         { type: "number", subject: "AFRICA SECTOR", question: "מהו הגובה במטרים של הג'ירף שצווארו משמש מודל לזרועות רובוטיות?", answer: "5" },
-        { type: "sort", subject: "AFRICA SECTOR", question: "סדרו את פתרונות הביומימיקרי מהבסיסי למתקדם:", answer: ["חיקוי צבעי הסוואה (זיקית)", "איסוף מים מהאוויר (חיפושית נמיב)", "ייצור חום פנימי (צבוע)"], options: ["איסוף מים מהאוויר (חיפושית נמיב)", "חיקוי צבעי הסוואה (זיקית)", "ייצור חום פנימי (צבוע)"] },
+        { type: "sort", subject: "AFRICA SECTOR", question: "סדרו את פתרונות הביומימיקרי מהמתקדם לבסיסי:", answer: ["חיקוי צבעי הסוואה (זיקית)", "איסוף מים מהאוויר (חיפושית נמיב)", "ייצור חום פנימי (צבוע)"], options: ["איסוף מים מהאוויר (חיפושית נמיב)", "חיקוי צבעי הסוואה (זיקית)", "ייצור חום פנימי (צבוע)"] },
         
         { type: "mcq", subject: "EUROPE SECTOR", question: "איזו ציפור אירופאית שימש השראה לחרטום רכבת הקליע?", answer: "שלדג", options: ["נקר", "בז נודד", "שלדג", "ינשוף"] },
         { type: "number", subject: "EUROPE SECTOR", question: "כמה אחוזים מכוח המשיכה יכולים חרקי מים להחזיק בכפות רגליהם?", answer: "1000" },
@@ -239,7 +239,7 @@
         { type: "number", subject: "ANTARCTICA SECTOR", question: "כמה אחוזים מקרני השמש מחזירה מעטפת הקרח (אלבדו)?", answer: "90" },
         { type: "mcq", subject: "ANTARCTICA SECTOR", question: "דג הקרח באנטארקטיקה משמש השראה למה?", answer: "חלבונים נוגדי קיפאון", options: ["מנועי סילון", "חלבונים נוגדי קיפאון", "בדי הסוואה", "חומרי סיכה"] }
     ];
-
+ 
     let currentIdx = 0;
     const codes = ["P", "L", "4", "N", "3", "T"];
 
@@ -307,8 +307,8 @@
             if (JSON.stringify(current) === JSON.stringify(p.answer)) correct = true;
         }
         const fb = document.getElementById('feedback');
-        if (correct) { fb.textContent = "VERIFIED"; fb.style.color = "white"; setTimeout(handleProgression, 700); }
-        else { fb.textContent = "DATA ERROR"; fb.style.color = "#ff3333"; setTimeout(() => fb.textContent = "", 1500); }
+        if (correct) { fb.textContent = ""; fb.style.color = "white"; setTimeout(handleProgression, 700); }
+        else { fb.textContent = "אינו נכון"; fb.style.color = "#ff3333"; setTimeout(() => fb.textContent = "", 1500); }
     }
 
     function handleProgression() {
