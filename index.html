@@ -10,7 +10,6 @@
         
         :root {
             --bg-deep: #020202;
-            /* Layered Opacity System */
             --panel-bg: rgba(10, 10, 10, 0.6); 
             --item-bg: rgba(255, 255, 255, 0.03);
             --border: rgba(255, 255, 255, 0.08);
@@ -35,8 +34,8 @@
             background-size: cover;
             background-position: center;
             z-index: -3;
-            transition: background-image 1.2s ease;
-            filter: brightness(0.5);
+            transition: background-image 0.5s ease;
+            filter: brightness(0.5) blur(10px);
         }
 
         #bg-gradient-overlay {
@@ -46,7 +45,6 @@
             z-index: -2;
         }
 
-        /* THE GHOST PANEL (Opacity & Blur) */
         .main-panel {
             background: var(--panel-bg);
             backdrop-filter: blur(40px) saturate(150%);
@@ -60,17 +58,15 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            /* Transition Logic */
             transition: filter 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
                         opacity 0.6s ease, 
                         transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
-        /* THE FIRE/OPACITY TRANSITION */
         .transition-blur {
             filter: blur(80px) brightness(2) contrast(1.2);
             opacity: 0;
-            transform: scale(0.94);
+            transform: scale(0.8);
         }
 
         .stagger-in > * { opacity: 0; transform: translateY(20px); }
@@ -89,10 +85,74 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1.8px;
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            transition: all 1s cubic-bezier(0.165, 0.84, 0.44, 1);
             cursor: pointer;
         }
         .btn-lab:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(255,255,255,0.2); }
+
+        .hint-container {
+            position: absolute;
+            right: -90px; /
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            z-index: 100;
+        }
+
+        .btn-hint {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            flex-shrink: 0;
+        }
+        .btn-hint:hover { transform: scale(1.1); background: white; color: black; }
+
+        .hint-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            
+            padding: 0;
+            border-radius: 30px;
+            margin-right: 20px;
+            
+            width: 0;
+            height: 0;
+            opacity: 0;
+            transform: scale(0);
+            transform-origin: left center;
+            
+            overflow: hidden;
+            transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hint-box.expanded {
+            width: 280px;
+            height: 180px; 
+            opacity: 0.9;
+            padding: 2rem;
+            transform: scale(1);
+            pointer-events: auto;
+        }
 
         .sortable-item {
             background: var(--item-bg);
@@ -140,7 +200,6 @@
         .step-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: 0.5s ease; }
         .step-dot.active { background: white; box-shadow: 0 0 12px white; transform: scale(1.6); }
 
-        /* DEV MENU */
         #dev-trigger { position: absolute; top: 25px; right: 25px; opacity: 0.15; cursor: pointer; transition: 0.4s; z-index: 100; }
         #dev-trigger:hover { opacity: 1; transform: rotate(45deg); }
         #dev-menu {
@@ -188,6 +247,15 @@
             <h2 id="question-text" class="text-3xl font-bold mb-12 leading-tight"></h2>
             <div id="options-box"></div>
         </div>
+
+        <div id="hint-container" class="hint-container hidden">
+            <div class="btn-hint" onclick="toggleHint()">?</div>
+            <div id="hint-box" class="hint-box">
+                <p class="text-[10px] uppercase tracking-widest text-white/40 mb-3 font-bold"> רמז</p>
+                <p id="hint-text" class="text-base text-white/90 leading-relaxed"></p>
+            </div>
+        </div>
+
         <div class="mt-12 flex flex-col items-center stagger-in">
             <p id="feedback" class="h-6 text-[10px] font-black mb-5 tracking-[0.3em] uppercase text-white/40"></p>
             <button onclick="checkAnswer()" class="btn-lab w-full">בדיקה</button>
@@ -214,33 +282,30 @@
 </div>
 
 <script>
+    // ... (Puzzles Array stays exactly as you provided)
     const puzzles = [
-        { type: "mcq", subject: "AFRICA SECTOR", question: "איזה מבנה אפריקאי שימש השראה לאוורור טבעי בבניין ה-Eastgate Centre?", answer: "קן טרמיטים", options: ["קן נשרים", "קן טרמיטים", "מחילת חולד", "מבנה אלמוגים"] },
-        { type: "number", subject: "AFRICA SECTOR", question: "מהו הגובה במטרים של הג'ירף שצווארו משמש מודל לזרועות רובוטיות?", answer: "5" },
-        { type: "sort", subject: "AFRICA SECTOR", question: "סדרו את פתרונות הביומימיקרי מהמתקדם לבסיסי:", answer: ["חיקוי צבעי הסוואה (זיקית)", "איסוף מים מהאוויר (חיפושית נמיב)", "ייצור חום פנימי (צבוע)"], options: ["איסוף מים מהאוויר (חיפושית נמיב)", "חיקוי צבעי הסוואה (זיקית)", "ייצור חום פנימי (צבוע)"] },
-        
-        { type: "mcq", subject: "EUROPE SECTOR", question: "איזו ציפור אירופאית שימש השראה לחרטום רכבת הקליע?", answer: "שלדג", options: ["נקר", "בז נודד", "שלדג", "ינשוף"] },
-        { type: "number", subject: "EUROPE SECTOR", question: "כמה אחוזים מכוח המשיכה יכולים חרקי מים להחזיק בכפות רגליהם?", answer: "1000" },
-        { type: "mcq", subject: "EUROPE SECTOR", question: "איזה צמח שימש השראה להמצאת ה'סקוטש' (Velcro)?", answer: "זרעי כלב שדה", options: ["עלי ליבנה", "זרעי כלב שדה", "עלי ערבה", "אצטרובל"] },
-        
-        { type: "mcq", subject: "ASIA SECTOR", question: "איזה צמח מים אסיאתי שימש השראה לציפויים מנקים את עצם?", answer: "לוטוס", options: ["במבוק", "לילי מים", "אורז", "לוטוס"] },
-        { type: "number", subject: "ASIA SECTOR", question: "כמה כנפיים יש לפרפר הטורנינג אסיאתי בעל הצבע המבני?", answer: "4" },
-        { type: "sort", subject: "ASIA SECTOR", question: "סדר את המבנים מהעמידות הנמוכה ביותר לגבוהה ביותר:", answer: ["מבנה עץ פשוט", "מגדל עץ יפני (פאגודה)", "קן צרעה"], options: ["מגדל עץ יפני (פאגודה)", "קן צרעה", "מבנה עץ פשוט"] },
-        
-        { type: "number", subject: "AUSTRALIA SECTOR", question: "כמה רגליים אחוריות משמשות את הקנגורו לזינוק?", answer: "2" },
-        { type: "mcq", subject: "AUSTRALIA SECTOR", question: "עור הכריש האוסטרלי שימש השראה למניעת הצטברות של מה?", answer: "חיידקים ואצות", options: ["לכלוך ושומן", "חיידקים ואצות", "חלודה", "שריטות"] },
-        { type: "sort", subject: "AUSTRALIA SECTOR", question: "סדר שיטות קליטת מים מהיעילה ביותר לפחות יעילה לאדם:", answer: ["שמירת טל על השריון (לטאת קוצנית)", "הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)"], options: ["הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)","שמירת טל על השריון (לטאת קוצנית)"] },
-
-        { type: "mcq", subject: "AMERICA SECTOR", question: "מהו היסוד שהופך את שיני הבונה לקשות ומתחדשות כמודל לכלי חיתוך?", answer: "ברזל", options: ["סידן", "ברזל", "מגנזיום", "אבץ"] },
-        { type: "number", subject: "AMERICA SECTOR", question: "כמה מעלות יכולה ציפור הקוליברי להסיט את כנפיה כדי לרחף?", answer: "180" },
-        { type: "mcq", subject: "AMERICA SECTOR", question: "איזה בעל חיים שימש השראה לגנרטורים המופעלים ע״י תנועת זנב?", answer: "צלופח חשמלי", options: ["תנין", "דולפין", "צלופח חשמלי", "פיראנה"] },
-
-        { type: "sort", subject: "ANTARCTICA SECTOR", question: "סדרו את מנגנוני הבידוד מהיעיל ביותר לפחות:", answer: ["שכבת אוויר נוצות (פינגווין)", "שכבת שומן עבה (כלב ים)", "פרווה חלולה (דוב קוטב)"], options: ["שכבת שומן עבה (כלב ים)", "פרווה חלולה (דוב קוטב)", "שכבת אוויר נוצות (פינגווין)"] },
-        { type: "number", subject: "ANTARCTICA SECTOR", question: "כמה אחוזים מקרני השמש מחזירה מעטפת הקרח (אלבדו)?", answer: "90" },
-        { type: "mcq", subject: "ANTARCTICA SECTOR", question: "דג הקרח באנטארקטיקה משמש השראה למה?", answer: "חלבונים נוגדי קיפאון", options: ["מנועי סילון", "חלבונים נוגדי קיפאון", "בדי הסוואה", "חומרי סיכה"] }
+        { type: "mcq", subject: "AFRICA SECTOR", question: "איזה מבנה אפריקאי שימש השראה לאוורור טבעי בבניין ה-Eastgate Centre?", answer: "קן טרמיטים", options: ["קן נשרים", "קן טרמיטים", "מחילת חולד", "מבנה אלמוגים"], hint: "זהו מבנה שנבנה על ידי חרקים קטנים באדמה." },
+        { type: "number", subject: "AFRICA SECTOR", question: "מהו הגובה במטרים של הג'ירף שצווארו משמש מודל לזרועות רובוטיות?", answer: "5", hint: "זהו מספר בין 4 ל-6." },
+        { type: "sort", subject: "AFRICA SECTOR", question: "סדרו את פתרונות הביומימיקרי מהמתקדם לבסיסי:", answer: ["חיקוי צבעי הסוואה (זיקית)", "איסוף מים מהאוויר (חיפושית נמיב)", "ייצור חום פנימי (צבוע)"], options: ["איסוף מים מהאוויר (חיפושית נמיב)", "חיקוי צבעי הסוואה (זיקית)", "ייצור חום פנימי (צבוע)"], hint: "הזיקית היא המורכבת ביותר טכנולוגית." },
+        { type: "mcq", subject: "EUROPE SECTOR", question: "איזו ציפור אירופאית שימש השראה לחרטום רכבת הקליע?", answer: "שלדג", options: ["נקר", "בז נודד", "שלדג", "ינשוף"], hint: "ציפור זו צוללת למים מבלי להתיז." },
+        { type: "number", subject: "EUROPE SECTOR", question: "כמה אחוזים מכוח המשיכה יכולים חרקי מים להחזיק בכפות רגליהם?", answer: "1000", hint: "זהו מספר עגול וגדול מאוד (אלף)." },
+        { type: "mcq", subject: "EUROPE SECTOR", question: "איזה צמח שימש השראה להמצאת ה'סקוטש' (Velcro)?", answer: "זרעי כלב שדה", options: ["עלי ליבנה", "זרעי כלב שדה", "עלי ערבה", "אצטרובל"], hint: "זרעים שנדבקים לפרווה של חיות." },
+        { type: "mcq", subject: "ASIA SECTOR", question: "איזה צמח מים אסיאתי שימש השראה לציפויים מנקים את עצם?", answer: "לוטוס", options: ["במבוק", "לילי מים", "אורז", "לוטוס"], hint: "פרח שדוחה מים ולכלוך." },
+        { type: "number", subject: "ASIA SECTOR", question: "כמה כנפיים יש לפרפר הטורנינג אסיאתי בעל הצבע המבני?", answer: "4", hint: "לרוב הפרפרים יש מספר זוגי זה של כנפיים." },
+        { type: "sort", subject: "ASIA SECTOR", question: "סדר את המבנים מהעמידות הנמוכה ביותר לגבוהה ביותר:", answer: ["מבנה עץ פשוט", "מגדל עץ יפני (פאגודה)", "קן צרעה"], options: ["מגדל עץ יפני (פאגודה)", "קן צרעה", "מבנה עץ פשוט"], hint: "מבנה הצרעה הוא החזק ביותר ביחס למשקלו." },
+        { type: "number", subject: "AUSTRALIA SECTOR", question: "כמה רגליים אחוריות משמשות את הקנגורו לזינוק?", answer: "2", hint: "הקנגורו מזנק על שתי רגליים." },
+        { type: "mcq", subject: "AUSTRALIA SECTOR", question: "עור הכריש האוסטרלי שימש השראה למניעת הצטברות של מה?", answer: "חיידקים ואצות", options: ["לכלוך ושומן", "חיידקים ואצות", "חלודה", "שריטות"], hint: "משהו מיקרוסקופי שצומח במים." },
+        { type: "sort", subject: "AUSTRALIA SECTOR", question: "סדר שיטות קליטת מים מהיעילה ביותר לפחות יעילה לאדם:", answer: ["שמירת טל על השריון (לטאת קוצנית)", "הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)"], options: ["הזעה פנימית (קואלה)", "שתייה רגילה (ברווז)","שמירת טל על השריון (לטאת קוצנית)"], hint: "הלטאה פיתחה מנגנון חיצוני ייחודי." },
+        { type: "mcq", subject: "AMERICA SECTOR", question: "מהו היסוד שהופך את שיני הבונה לקשות ומתחדשות כמודל לכלי חיתוך?", answer: "ברזל", options: ["סידן", "ברזל", "מגנזיום", "אבץ"], hint: "היסוד שנותן לדם את צבעו האדום." },
+        { type: "number", subject: "AMERICA SECTOR", question: "כמה מעלות יכולה ציפור הקוליברי להסיט את כנפיה כדי לרחף?", answer: "180", hint: "חצי סיבוב שלם." },
+        { type: "mcq", subject: "AMERICA SECTOR", question: "איזה בעל חיים שימש השראה לגנרטורים המופעלים ע״י תנועת זנב?", answer: "צלופח חשמלי", options: ["תנין", "דולפין", "צלופח חשמלי", "פיראנה"], hint: "בעל חיים שידוע בייצור אנרגיה בעצמו." },
+        { type: "sort", subject: "ANTARCTICA SECTOR", question: "סדרו את מנגנוני הבידוד מהיעיל ביותר לפחות:", answer: ["שכבת אוויר נוצות (פינגווין)", "שכבת שומן עבה (כלב ים)", "פרווה חלולה (דוב קוטב)"], options: ["שכבת שומן עבה (כלב ים)", "פרווה חלולה (דוב קוטב)", "שכבת אוויר נוצות (פינגווין)"], hint: "הפינגווין מבודד בעזרת אוויר כלוא." },
+        { type: "number", subject: "ANTARCTICA SECTOR", question: "כמה אחוזים מקרני השמש מחזירה מעטפת הקרח (אלבדו)?", answer: "90", hint: "מעל 85 אחוזים." },
+        { type: "mcq", subject: "ANTARCTICA SECTOR", question: "דג הקרח באנטארקטיקה משמש השראה למה?", answer: "חלבונים נוגדי קיפאון", options: ["מנועי סילון", "חלבונים נוגדי קיפאון", "בדי הסוואה", "חומרי סיכה"], hint: "חשבו על הסביבה הקפואה שבה הוא חי." }
     ];
  
     let currentIdx = 0;
+    let attempts = 0;
     const codes = ["P", "L", "4", "N", "3", "T"];
 
     function fireTransition(fromId, toId, callback) {
@@ -259,6 +324,10 @@
     }
 
     function loadPuzzle() {
+        attempts = 0;
+        document.getElementById('hint-container').classList.add('hidden');
+        document.getElementById('hint-box').classList.remove('expanded');
+        
         const p = puzzles[currentIdx];
         document.body.style.setProperty('--background-url', `url('./${Math.floor(currentIdx/3)+1}.png')`);
         document.getElementById('room-name').textContent = p.subject;
@@ -269,6 +338,8 @@
             dots.appendChild(dot);
         });
         document.getElementById('question-text').textContent = p.question;
+        document.getElementById('hint-text').textContent = p.hint;
+        
         const box = document.getElementById('options-box'); box.innerHTML = '';
         if (p.type === 'mcq') {
             p.options.forEach(opt => { box.innerHTML += `<label><input type="radio" name="ans" value="${opt}" class="hidden"><span class="option-card">${opt}</span></label>`; });
@@ -283,6 +354,10 @@
             });
             setupSortable(box);
         }
+    }
+
+    function toggleHint() {
+        document.getElementById('hint-box').classList.toggle('expanded');
     }
 
     function setupSortable(container) {
@@ -308,7 +383,15 @@
         }
         const fb = document.getElementById('feedback');
         if (correct) { fb.textContent = ""; fb.style.color = "white"; setTimeout(handleProgression, 700); }
-        else { fb.textContent = "אינו נכון"; fb.style.color = "#ff3333"; setTimeout(() => fb.textContent = "", 1500); }
+        else { 
+            attempts++;
+            fb.textContent = "אינו נכון"; 
+            fb.style.color = "#ff3333"; 
+            if (attempts >= 3) {
+                document.getElementById('hint-container').classList.remove('hidden');
+            }
+            setTimeout(() => fb.textContent = "", 1500); 
+        }
     }
 
     function handleProgression() {
@@ -329,8 +412,7 @@
     function skipTo(idx) { currentIdx = idx; toggleDevMenu(); fireTransition(null, 'game-screen', loadPuzzle); }
     const dev = document.getElementById('dev-menu');
     puzzles.forEach((p, i) => { dev.innerHTML += `<button class="skip-btn" onclick="skipTo(${i})">${p.subject} - Stage ${(i%3)+1}</button>`; });
-    dev.innerHTML += `<button class="skip-btn" style="color:#ff3333" onclick="fireTransition(null, 'lock-screen'); toggleDevMenu();">ADMIN OVERRIDE</button>`;
+    dev.innerHTML += `<button class="skip-btn" style="color:#ff3333" onclick="fireTransition(null, 'lock-screen'); toggleDevMenu();">FINAL</button>`;
 </script>
 </body>
 </html>
-
